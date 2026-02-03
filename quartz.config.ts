@@ -17,7 +17,7 @@ const config: QuartzConfig = {
     },
     locale: "en-US",
     // 👇 UPDATED: Points to your actual GitHub Pages site
-    baseUrl: "shibe.github.io",
+    baseUrl: "shibe-bit.github.io",
     ignorePatterns: ["private", "templates", ".obsidian"],
     defaultDateType: "modified",
     theme: {
