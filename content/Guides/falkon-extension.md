@@ -131,3 +131,10 @@ export FALKON_PLUGIN_PATH=$(pwd)/bin/plugins && ./bin/falkon
 5. **Output:** Look at the terminal to see your `--- Hello World! ---` printout.
 
 ![Extension Screenshot](../assets/screenshot.png)
+
+## Credits
+
+This tutorial is based on and inspired by the excellent Falkon Python extension guide by **SGOrava**.
+
+Original tutorial:  
+[link](https://falkon.sgorava.xyz/tutorial/python/falkon-python-tutorial-2.-basic-extension/)
