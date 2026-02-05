@@ -1,0 +1,1 @@
+**This particular guides are for myself in which i made mistakes and so that i won't repeat them agian**
