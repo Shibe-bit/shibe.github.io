@@ -3,198 +3,181 @@
 This guide walks through creating a basic "Hello World" plugin in falkon. 
 
 ---
+###  1. Project Structure
 
-## 1. Project Structure
+Create a dedicated directory for your extension at `src/plugins/HelloWorld/`. You must include these four files to build a functional plugin:
 
-Create a dedicated folder inside the Falkon source tree. Case sensitivity is critical here for Linux.
-
-**Path:** `src/plugins/HelloWorld/`
-
-- `helloworld.json` — Plugin Metadata
+- **`helloworld.json`**: The **Identity Card**. It provides plugin info (name, author, icon) to the browser UI.
     
-- `HelloWorld.h` — Header (Interface)
+- **`helloworld.h`**: The **Contract**. It defines the class structure and the "hooks" the browser uses to talk to your code.
     
-- `HelloWorld.cpp` — Implementation (Logic)
+- **`helloworld.cpp`**: The **Logic**. This is the "brain" where your actual C++ code lives.
     
-- `CMakeLists.txt` — Build Instructions
+- **`CMakeLists.txt`**: The **Blueprint**. It tells the compiler how to turn your text files into a machine-readable plugin.
     
 
 ---
 
-## 2. Plugin Metadata (`helloworld.json`)
+###  2.`helloworld.json`
 
-This file defines how the plugin appears in the Falkon UI.
+This file allows Falkon to display your plugin in the "Extensions" menu without actually running any C++ code. This keeps the browser fast because it only "looks" at the plugin without "loading" it.
 
 JSON
 
 ```json
 {
-    "Name": "Hello World Extension",
-    "Description": "A simple C++ plugin that greets the user.",
-    "Author": "Author_name",
-    "Version": "1.0",
-    "Icon": "preferences-desktop-notification"
+  "Name": "Hello World Plugin",
+  "Comment": "Minimal Hello World plugin for Falkon",
+  "Icon": "configure",
+  "X-Falkon-Settings": "true",
+  "X-Falkon-Version": "0.1.7"
 }
 ```
 
+- **`X-Falkon-Settings`**: Setting this to `true` tells Falkon to enable the "Settings" button in the preferences window.
+    
+- **`Icon`**: Uses standard system icon names (e.g., `configure` or `preferences-system`).
+    
+
 ---
 
-## 3. The Header (`HelloWorld.h`)
+### 3.`helloworld.h`
 
-The plugin must inherit from `PluginInterface`. The `Q_PLUGIN_METADATA` macro links this header to your JSON file.
+In C++, inheriting from **`PluginInterface`** is a promise. You are promising the browser that your class has specific functions like `init()` and `unload()`.
 
-
-CPP 
+CPP
 
 ```cpp
 #ifndef HELLOWORLD_H
 #define HELLOWORLD_H
 
 #include "plugininterface.h"
-#include <QObject>
+#include <QMessageBox>
 
 class HelloWorld : public QObject, public PluginInterface
 {
     Q_OBJECT
     Q_INTERFACES(PluginInterface)
-    Q_PLUGIN_METADATA(IID "org.falkon.HelloWorld" FILE "helloworld.json")
+    // Links the JSON metadata to this header
+    Q_PLUGIN_METADATA(IID "Falkon.Browser.plugin.HelloWorld" FILE "helloworld.json")
 
 public:
     explicit HelloWorld();
-
-    // Mandatory interface methods
+    
+    // Mandatory hooks the browser calls
     void init(InitState state, const QString &settingsPath) override;
     void unload() override;
     bool testPlugin() override;
-    
-    // UI methods
     void showSettings(QWidget *parent) override;
 };
 
-#endif // HELLOWORLD_H
+#endif
 ```
+
+- **`Q_INTERFACES`**: Acts as a "handshake" that allows the browser to safely cast your code into a plugin it can use.
+    
+- **`IID`**: A unique ID for your plugin. If two plugins have the same IID, the browser will refuse to load the second one.
+    
 
 ---
 
-## 4. The Implementation (`HelloWorld.cpp`)
+### 4.`helloworld.cpp`
 
-**Note:** In Qt6, you must wrap strings in `QStringLiteral()` to avoid the "deleted function" compiler error.
+This is where the actual action happens. When you enable the plugin, the `init()` function runs.
 
 CPP
 
 ```cpp
-#include "HelloWorld.h"
-#include <QMessageBox>
+#include "helloworld.h"
+#include "../config.h"
 #include <QDebug>
 
 HelloWorld::HelloWorld() : QObject() {}
 
-void HelloWorld::init(InitState state, const QString &settingsPath)
-{
-    // Suppress unused parameter warnings
+void HelloWorld::init(InitState state, const QString &settingsPath) {
     Q_UNUSED(state)
     Q_UNUSED(settingsPath)
-
-    qDebug() << "Hello World Extension: Successfully loaded!";
-
-    // Modern Qt6 requires explicit QString conversion
-    QMessageBox::information(nullptr, 
-                             QStringLiteral("Falkon Greeting"), 
-                             QStringLiteral("Hello World! Your C++ extension is now active."));
+    
+    // Prints a message to the terminal for debugging
+    qDebug() << QStringLiteral("Hello World from Falkon plugin!");
 }
 
-void HelloWorld::unload()
-{
-    qDebug() << "Hello World Extension: Unloaded.";
+void HelloWorld::unload() {
+    // Logic to clean up when the plugin is disabled
 }
 
-bool HelloWorld::testPlugin()
-{
-    return true; // Tells Falkon the plugin is compatible
+bool HelloWorld::testPlugin() {
+    // Safety check: only load if the plugin matches the browser version
+    return (QString::fromLatin1(Qz::VERSION) == QLatin1String(FALKON_VERSION));
 }
 
-void HelloWorld::showSettings(QWidget *parent)
-{
-    QMessageBox::information(parent, 
-                             QStringLiteral("Settings"), 
-                             QStringLiteral("There are no settings for this simple demo."));
+void HelloWorld::showSettings(QWidget *parent) {
+    // Shows a popup message when the 'Settings' button is clicked
+    QMessageBox::information(parent, tr("Hello"), tr("Hello World from Falkon!"));
 }
 ```
 
+- **`testPlugin()`**: Crucial for stability. It prevents the browser from crashing if your plugin was built for a different version of Falkon.
+    
+- **`QStringLiteral`**: A memory-efficient way to handle text in C++ that avoids unnecessary copies.
+    
+
 ---
 
-## 5. Build Instructions (`CMakeLists.txt`)
+### 5.`CMakeLists.txt`
 
-Create this file **inside** the `src/plugins/HelloWorld/` directory.
+This file tells the **CMake** build system how to compile your source files into a **Shared Object (`.so`)** file.
 
 CMake
 
 ```txt
-# Define the plugin as a MODULE (Shared Object)
-add_library(HelloWorld MODULE
-    HelloWorld.cpp
-    HelloWorld.h
-)   
+set(HelloWorld_SRCS helloworld.cpp helloworld.h)
 
-# Link against the Falkon core library
-target_link_libraries(HelloWorld
-    PRIVATE
-    FalkonPrivate
-)
+# Handles UI translations automatically
+ecm_create_qm_loader(HelloWorld_SRCS falkon_helloworld_qt)
 
-# Include Falkon headers (required for plugininterface.h)
-target_include_directories(HelloWorld PRIVATE 
-    ${FALKON_LIB_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
+# Build as a MODULE (a dynamically loadable plugin)
+add_library(HelloWorld MODULE ${HelloWorld_SRCS})
 
-# Set the installation path
+# Link your plugin to the main Falkon library
+target_link_libraries(HelloWorld FalkonPrivate)
+
+# Install the finished .so file to the plugins directory
 install(TARGETS HelloWorld DESTINATION ${FALKON_INSTALL_PLUGINDIR})
 ```
 
+- **`MODULE`**: Tells the compiler this code is meant to be plugged into another app at runtime, not run as a standalone program.
+    
+
 ---
 
-## 6. Build and Activation
+### 6. Compiling and Running
 
-### Step A: Register the Subdirectory
-
-Open the parent file: `src/plugins/CMakeLists.txt` and add:
-
-CMake
-
-```
-add_subdirectory(HelloWorld)
-```
-
-### Step B: Compile
-
-Navigate to your `build` directory. Use the `-j` flag to utilize all your CPU cores for a faster build.
-
-Bash
-
-```
-cd build
-cmake ..
-make -j$(nproc) HelloWorld
-```
-
-### Step C: Launch
-
-Use the prefix script to ensure Falkon loads your local build instead of the system version.
-
-Bash
-
-```
-source prefix.sh
-./bin/falkon
-```
-
-### Step D: Enable
-
-1. Go to **Preferences > Extensions**.
+1. **Register the plugin**: Add `add_subdirectory(HelloWorld)` to the bottom of `src/plugins/CMakeLists.txt`.
     
-2. Find **"Hello World Extension"**.
+2. **Build**:
     
-3. Check the box. Your popup will appear immediately!
+    
+    ```bash
+    cd ~/falkon/build
+    cmake -DCMAKE_INSTALL_PREFIX=./install -DQUICK_INSTALL=ON ..
+    make -j$(nproc) install
+    ```
+    
+3. **Set the Environment**: You must tell your OS where the new plugin is, or it will only look in system folders (like `/usr/lib`).
+    
+    
+    ```bash
+    export FALKON_PREFIX=$HOME/falkon/build/install
+    export XDG_DATA_DIRS="$FALKON_PREFIX/share:$XDG_DATA_DIRS"
+    export QT_PLUGIN_PATH="$FALKON_PREFIX/lib/plugins:$QT_PLUGIN_PATH"
+    
+    # Launch Falkon
+    $FALKON_PREFIX/bin/falkon
+    ```
+    
+4. **Activate**: Open Falkon, go to **Preferences > Extensions**, and check the box for **Hello World Plugin**
 
-![Falkon Hello World Extension](../../assets/helloworld.png)
+
+5. **Look at your output**
+![Falkon Hello World Extension](../assets/helloworld.png)
