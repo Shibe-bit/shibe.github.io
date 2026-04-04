@@ -41,7 +41,7 @@ My approach to synchronization evolved through three distinct phases:
 - **Deletion Handling:** Simply deleting a bookmark locally caused it to "re-appear" during the next sync because the client thought it was "new data" from the server.
     
 - **ID Instability:** Using temporary database IDs caused duplicate entries. I solved this by implementing a **stable hashing algorithm** (URL + Title) for bookmark IDs.
-        
+
 
 ### What Worked
 
@@ -81,4 +81,4 @@ Before the final code submission, I am focusing on:
 
 ### Mentor Acknowledgments
 
-Special thanks to **Schimon Jehudah** for the deep dives into XMPP architecture and **Benson Muite** for the architectural guidance on CRDTs and manual-first sync strategies.
+Special thanks to **Schimon Jehudah** for the deep dives into XMPP architecture and **Benson Muite** for the architectural guidance on CRDTs and manual-first sync strategies. including **Juraj Oravec**
