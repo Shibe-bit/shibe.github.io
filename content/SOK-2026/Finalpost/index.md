@@ -81,4 +81,4 @@ Before the final code submission, I am focusing on:
 
 ### Mentor Acknowledgments
 
-Special thanks to **Schimon Jehudah** for the deep dives into XMPP architecture and **Benson Muite** for the architectural guidance on CRDTs and manual-first sync strategies. including **Juraj Oravec**
+Special thanks to **Schimon Jehudah** for the deep dives into XMPP architecture and **Benson Muite** for the architectural guidance on CRDTs and manual-first sync strategies. including **Juraj Oravec**.
